@@ -6,10 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 import ReactPlayer from "react-player";
+import ReactPlayerVimeo from "react-player/vimeo";
 
 const Home: NextPage = () => {
   const playerContainerRef = useRef(null);
   const [client, setClient] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
     setClient(true);
@@ -34,15 +36,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     if (videoRef.current) {
       const player = new Plyr(videoRef.current, {
-        controls: [
-          "play-large",
-          "play",
-          "progress",
-          "current-time",
-          "mute",
-          "volume",
-          "captions",
-        ],
+        controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions"],
         clickToPlay: false,
         // controls: [],
         fullscreen: { enabled: false, iosNative: false },
@@ -62,6 +56,7 @@ const Home: NextPage = () => {
         player.destroy();
       };
     }
+    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
   }, []);
 
   useEffect(() => {
@@ -110,6 +105,25 @@ const Home: NextPage = () => {
               <ReactPlayer
                 url="https://www.youtube.com/watch?v=pSUydWEqKwE"
                 webkit-playsinline="true"
+              />
+
+              <ReactPlayer
+                url="https://player.vimeo.com/video/76979871?playsinline=1"
+                webkit-playsinline="true"
+                playsinline
+                controls
+                config={{
+                  file: {
+                    forceHLS: !isSafari,
+                    forceVideo: true,
+                    hlsVersion: "0.12.4",
+                    attributes: {
+                      // poster: feed && feed.actionUrl && feed.actionUrl.image,
+                      disablePictureInPicture: true,
+                    },
+                  },
+                }}
+                // playsinline="true"
               />
             </div>
             {/* <div>
