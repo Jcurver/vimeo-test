@@ -1,207 +1,210 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import Image from "next/image";
-import styles from "../styles/Home.module.css";
 import { useEffect, useRef, useState } from "react";
-import Plyr from "plyr";
-import "plyr/dist/plyr.css";
 import ReactPlayer from "react-player";
-import ReactPlayerVimeo from "react-player/vimeo";
+import styles from "../styles/video.module.css";
 
 const Home: NextPage = () => {
-  const playerContainerRef = useRef(null);
   const [client, setClient] = useState(false);
-  const [isSafari, setIsSafari] = useState(false);
+  const [mobileScreen, setMobileScreen] = useState<{
+    screehWidth: number;
+    screenHeight: number;
+  }>({
+    screehWidth: 0,
+    screenHeight: 0,
+  });
 
   useEffect(() => {
     setClient(true);
-    if (playerContainerRef.current) {
-      new Plyr(playerContainerRef.current);
-    }
   }, []);
 
-  const videoRef = useRef(null);
+  const playerRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // const player = new Plyr("#player", {
-  //   clickToPlay: false,
-  //   controls: [],
-  //   fullscreen: { enabled: false, iosNative: false },
-  //   // playsinline: true,
-  //   vimeo: {
-  //     playsinline: true,
-  //     controls: false,
-  //   },
-  // });
-
+  // const toggleFullscreen = () => {
+  //   if (playerRef.current) {
+  //     const internalPlayer = playerRef.current.getInternalPlayer();
+  //     if (internalPlayer && internalPlayer.requestFullscreen) {
+  //       internalPlayer.requestFullscreen();
+  //     }
+  //     setIsFullscreen(!isFullscreen);
+  //   }
+  // };
   useEffect(() => {
-    if (videoRef.current) {
-      const player = new Plyr(videoRef.current, {
-        controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions"],
-        clickToPlay: false,
-        // controls: [],
-        fullscreen: { enabled: false, iosNative: false },
-        // playsinline: true,
-        // dataPlyrProvider: "vimeo",
-        vimeo: {
-          playsinline: true,
-          // controls: false,
-          iframeParams: {
-            allow: "autoplay; fullscreen; picture-in-picture",
-          },
-        },
-      });
+    window.addEventListener("message", (event) => {
+      console.log(event.data);
+      let parsedData: any = {};
+      if (typeof event.data === "string") {
+        parsedData = JSON.parse(event.data);
+      }
 
-      return () => {
-        // 컴포넌트 언마운트 시 Plyr 인스턴스 제거
-        player.destroy();
-      };
-    }
-    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
-  }, []);
+      if (parsedData?.didimessage) {
+        const { SCREEN_HEIGHT, SCREEN_WIDTH } = parsedData?.didimessage;
+        setMobileScreen({
+          screehWidth: SCREEN_WIDTH,
+          screenHeight: SCREEN_HEIGHT,
+        });
+      }
+    });
+    // document.addEventListener("message", (event) => {
+    //   console.log(event.data);
+    //   let parsedData: any = {};
+    //   if (typeof event.data === "string") {
+    //     parsedData = JSON.parse(event.data);
+    //   }
 
-  useEffect(() => {
-    // 컴포넌트 마운트 후 Plyr 인스턴스 생성
-    const player = new Plyr("#player");
-
-    // 컴포넌트 언마운트 시 리소스 해제
+    //   if (parsedData?.didimessage) {
+    //     const { SCREEN_HEIGHT, SCREEN_WIDTH } = parsedData?.didimessage;
+    //     setMobileScreen({
+    //       screehWidth: SCREEN_WIDTH,
+    //       screenHeight: SCREEN_HEIGHT,
+    //     });
+    //   }
+    // });
     return () => {
-      player && player.destroy();
+      window.removeEventListener("message", (event) => {});
     };
   }, []);
 
-  const vimeoUrl = `https://player.vimeo.com/video/76979871?playsinline=1`;
+  const messageToRN = (message: string | object) => {
+    //@ts-ignore
+    if (window.ReactNativeWebView) {
+      //@ts-ignore
+      window.ReactNativeWebView.postMessage(JSON.stringify({ message }));
+    } else {
+      alert({ message: "not mobile" });
+    }
+  };
+  // if (mobileScreen.screehWidth === 0) return <div>loading</div>;
 
   return (
     <>
       <Head>
-        <script src="https://player.vimeo.com/api/player.js" async />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+        ></meta>
       </Head>
-      <div
-        id="player"
-        data-plyr-provider="vimeo"
-        data-plyr-embed-id="76979871"
-        // style="margin-top: 50px;"
-      ></div>
-      <div>
+      <div style={{}}>
         {client && (
           <>
-            <iframe
-              ref={videoRef}
-              src={vimeoUrl}
-              // allow="autoplay"
-              // allowFullScreen
-              webkit-playsInline // iOS에서 인라인 재생을 위한 속성
-            />
-            {/* https://vimeo.com/252120919 */}
-            <iframe
-              src="https://player.vimeo.com/video/76979871?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
-              allowFullScreen
-              allowTransparency
-              allow="autoplay"
-              webkit-playsinline="true"
-              // webkit-playsinline="true"
-            ></iframe>
             <div>
-              <ReactPlayer
-                url="https://www.youtube.com/watch?v=pSUydWEqKwE"
-                webkit-playsinline="true"
-              />
+              <div
+                className={`${styles.video_wrapper} ${
+                  isFullscreen ? `${styles.fullscreen}` : ""
+                }`}
+                style={{
+                  width: isFullscreen
+                    ? mobileScreen.screenHeight
+                    : mobileScreen.screehWidth,
+                  height: isFullscreen
+                    ? mobileScreen.screehWidth
+                    : mobileScreen.screenHeight,
+                  backgroundColor: "yellow",
+                }}
+                // style={{ width: "100%", height: "100%" }}
+              >
+                <ReactPlayer
+                  url="https://www.youtube.com/watch?v=hPCgXeAi55s"
+                  playsinline
+                  playing={playing}
+                  // controls
 
-              <ReactPlayer
-                url="https://player.vimeo.com/video/76979871?playsinline=1"
-                webkit-playsinline="true"
+                  width={"100%"}
+                  height={"100%"}
+                />
+                <button
+                  style={{
+                    width: 80,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 3,
+                  }}
+                  onClick={() => {
+                    setPlaying((p) => !p);
+                  }}
+                >
+                  <p>{playing ? "Pause" : "Play"}</p>
+                </button>
+                <button
+                  style={{
+                    width: 80,
+                    position: "absolute",
+                    top: 0,
+                    left: 100,
+                    zIndex: 99999,
+                  }}
+                  onClick={() => {
+                    setIsFullscreen((p) => !p);
+                    messageToRN(isFullscreen ? "exitFullscreen" : "fullscreen");
+                  }}
+                >
+                  <p>fullscreen</p>
+                </button>
+                <button
+                  style={{
+                    width: 80,
+                    position: "absolute",
+                    top: 0,
+                    left: 200,
+                    zIndex: 99999,
+                  }}
+                  onClick={() => {
+                    messageToRN("back");
+                  }}
+                >
+                  <p>back</p>
+                </button>
+              </div>
+              {/* <ReactPlayer
+                ref={playerRef}
+                url="https://player.vimeo.com/video/76979871"
+                // url="https://www.youtube.com/watch?v=hPCgXeAi55s"
+                width="100%"
+                height="100%"
                 playsinline
-                controls
+                controls={false}
+                // options={{
+                //   fullscreen: {
+                //     iosNative: true,
+                //   },
+                // }}
                 config={{
-                  file: {
-                    forceHLS: !isSafari,
-                    forceVideo: true,
-                    hlsVersion: "0.12.4",
-                    attributes: {
-                      // poster: feed && feed.actionUrl && feed.actionUrl.image,
-                      disablePictureInPicture: true,
+                  vimeo: {
+                    playerOptions: {
+                      controls: false,
+                      responsive: true,
+                      autoplay: true,
+                      muted: true,
+                      autopause: false,
+                      playsinline: true,
+                      loop: true,
+                    },
+                  },
+                  youtube: {
+                    playerVars: {
+                      controls: 0,
                     },
                   },
                 }}
-                // playsinline="true"
               />
+              <CustomFullscreenButton onClick={toggleFullscreen} /> */}
             </div>
-            {/* <div>
-              <ReactPlayer
-                url="https://www.youtube.com/watch?v=pSUydWEqKwE"
-                webkit-playsinline="true"
-              />
-            </div> */}
-
-            <iframe
-              src="https://player.vimeo.com/video/76979871?playsinline=1"
-              allowFullScreen
-              allowTransparency
-              allow="autoplay"
-              webkit-playsinline="true"
-            ></iframe>
-            {/* <iframe
-              src="https://player.vimeo.com/video/201974072?h=5da68dcaa8&title=0&byline=0&portrait=0"
-              width="640"
-              height="363"
-              frameborder="0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowfullscreen
-            ></iframe>
-            <div>
-              <iframe
-                src="https://player.vimeo.com/video/76979871?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
-                allowFullScreen
-                allowTransparency
-                allow="autoplay"
-              ></iframe>
-            </div>
-
-        
-            <iframe
-              src="https://player.vimeo.com/video/386664628?h=85bba6044f"
-              width="640"
-              height="480"
-              allow="autoplay; fullscreen; picture-in-picture"
-            ></iframe>
-            <p>
-              <a href="https://vimeo.com/386664628">환경관리 동영상 화제</a>{" "}
-              from <a href="https://vimeo.com/gg031120">경기도청</a> on{" "}
-              <a href="https://vimeo.com">Vimeo</a>.
-            </p>
-            <iframe
-              src="https://player.vimeo.com/video/252120919?h=a10bc5dabe"
-              width="640"
-              height="360"
-              // allowFullscreen
-              // frameBorder="0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              // webkit-playsinline="true"
-            ></iframe>
-            <p>
-              <a href="https://vimeo.com/252120919">똑1388(동영상)</a> from{" "}
-              <a href="https://vimeo.com/user56990472">
-                한국청소년상담복지개발원
-              </a>{" "}
-              on <a href="https://vimeo.com">Vimeo</a>.
-            </p>
-            <div>
-              <ReactPlayer
-                url="https://www.youtube.com/watch?v=pSUydWEqKwE"
-                webkit-playsinline="true"
-              />
-            </div>
-            <div>
-              <ReactPlayer
-                url="https://player.vimeo.com/video/76979871?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
-                webkit-playsinline="true"
-              />
-            </div> */}
           </>
         )}
       </div>
     </>
   );
 };
-//https://vimeo.com/252120919
+
+function CustomFullscreenButton({ onClick }: any) {
+  return (
+    <button onClick={onClick} style={{ right: "10px", bottom: "-50px" }}>
+      Fullscreen
+    </button>
+  );
+}
+
 export default Home;
