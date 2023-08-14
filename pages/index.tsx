@@ -18,9 +18,24 @@ const Home: NextPage = () => {
     setClient(true);
   }, []);
 
-  const playerRef = useRef(null);
+  const playerRef = useRef<ReactPlayer>(null);
   const [playing, setPlaying] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTimeFromUser, setCurrentTimeFromUser] = useState(0);
+  const [player, setPlayer] = useState(null);
+  useEffect(() => {
+    if (currentTimeFromUser > -1) {
+      setCurrentTime(currentTimeFromUser);
+    }
+    console.log("hi");
+    playerRef?.current?.seekTo(currentTimeFromUser, "seconds");
+  }, [currentTimeFromUser]);
+
+  useEffect(() => {
+    player?.seekTo(currentTimeFromUser);
+  }, [currentTimeFromUser]);
 
   // const toggleFullscreen = () => {
   //   if (playerRef.current) {
@@ -36,32 +51,41 @@ const Home: NextPage = () => {
     window.addEventListener("message", (event) => {
       let parsedData: any = {};
       if (typeof event.data === "string") {
-        console.log("DD", event.data);
-
         parsedData = JSON.parse(event.data);
-      } else {
-        // console.log("DD", event.data);
       }
 
-      if (parsedData?.didimessage) {
-        console.log("DD2", event.data);
-        if (parsedData?.didimessage === "play") {
+      if (parsedData?.didimessage?.playing !== undefined) {
+        if (parsedData.didimessage.playing === true) {
           setPlaying(true);
-        } else if (parsedData?.didimessage === "pause") {
+        } else {
           setPlaying(false);
         }
       }
-
-      if (parsedData?.didimessage) {
-        //@ts-ignore
-        if (window?.ReactNativeWebView) {
-          //@ts-ignore
-          window?.ReactNativeWebView.postMessage(
-            `Message from React Web to React Native ${event.data}`
-          );
+      if (parsedData?.didimessage?.isMuted !== undefined) {
+        if (parsedData.didimessage.isMuted === true) {
+          setIsMuted(true);
+        } else {
+          setIsMuted(false);
         }
-        console.log("DD", event.data);
       }
+
+      if (parsedData?.didimessage?.playbackRate !== undefined) {
+        setPlaybackRate(parsedData.didimessage.playbackRate);
+      }
+      if (parsedData?.didimessage?.currentTimeFromUser !== undefined) {
+        setCurrentTimeFromUser(parsedData.didimessage.currentTimeFromUser);
+      }
+
+      // if (parsedData?.didimessage) {
+      //   //@ts-ignore
+      //   if (window?.ReactNativeWebView) {
+      //     //@ts-ignore
+      //     window?.ReactNativeWebView.postMessage(
+      //       `Message from React Web to React Native ${event.data}`
+      //     );
+      //   }
+      //   console.log("DD", event.data);
+      // }
     });
     document.addEventListener("message", (event: any) => {
       console.log(event.data);
@@ -84,11 +108,15 @@ const Home: NextPage = () => {
     };
   }, []);
 
-  const messageToRN = (message: string | object) => {
+  useEffect(() => {
+    messageToRN({ currentTime });
+  }, [currentTime]);
+
+  const messageToRN = (didimessage: string | object) => {
     //@ts-ignore
     if (window.ReactNativeWebView) {
       //@ts-ignore
-      window.ReactNativeWebView.postMessage(JSON.stringify({ message }));
+      window.ReactNativeWebView.postMessage(JSON.stringify({ didimessage }));
     } else {
       alert({ message: "not mobile" });
     }
@@ -105,7 +133,7 @@ const Home: NextPage = () => {
           <>
             <div>
               <div
-                className={`${styles.video_wrapper} ${isFullscreen ? `${styles.fullscreen}` : ""}`}
+                className={`${styles.video_wrapper}`}
                 // style={{
                 //   width: isFullscreen ? mobileScreen.screenHeight : mobileScreen.screehWidth,
                 //   height: isFullscreen ? mobileScreen.screehWidth : mobileScreen.screenHeight,
@@ -175,21 +203,33 @@ const Home: NextPage = () => {
                 height="100%"
                 playsinline
                 controls={false}
+                muted={isMuted}
+                stopOnUnmount={true}
+                playbackRate={playbackRate}
+                progressInterval={900}
+                onProgress={(state) => {
+                  setCurrentTime(state.playedSeconds);
+                }}
+                // tapToSeek
+                onReady={(e) => {
+                  setPlayer(e.player);
+                }}
                 // options={{
                 //   fullscreen: {
                 //     iosNative: true,
                 //   },
                 // }}
+
                 config={{
                   vimeo: {
                     playerOptions: {
                       controls: false,
                       responsive: true,
-                      autoplay: true,
-                      muted: true,
-                      autopause: false,
+                      // autoplay: false,
+                      muted: false,
+                      // autopause: false,
                       playsinline: true,
-                      loop: true,
+                      // loop: true,
                     },
                   },
                   youtube: {
