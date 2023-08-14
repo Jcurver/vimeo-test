@@ -6,13 +6,13 @@ import styles from "../styles/video.module.css";
 
 const Home: NextPage = () => {
   const [client, setClient] = useState(false);
-  const [mobileScreen, setMobileScreen] = useState<{
-    screehWidth: number;
-    screenHeight: number;
-  }>({
-    screehWidth: 0,
-    screenHeight: 0,
-  });
+  // const [mobileScreen, setMobileScreen] = useState<{
+  //   screehWidth: number;
+  //   screenHeight: number;
+  // }>({
+  //   screehWidth: 0,
+  //   screenHeight: 0,
+  // });
 
   useEffect(() => {
     setClient(true);
@@ -31,8 +31,39 @@ const Home: NextPage = () => {
   //     setIsFullscreen(!isFullscreen);
   //   }
   // };
+
   useEffect(() => {
     window.addEventListener("message", (event) => {
+      let parsedData: any = {};
+      if (typeof event.data === "string") {
+        console.log("DD", event.data);
+
+        parsedData = JSON.parse(event.data);
+      } else {
+        // console.log("DD", event.data);
+      }
+
+      if (parsedData?.didimessage) {
+        console.log("DD2", event.data);
+        if (parsedData?.didimessage === "play") {
+          setPlaying(true);
+        } else if (parsedData?.didimessage === "pause") {
+          setPlaying(false);
+        }
+      }
+
+      if (parsedData?.didimessage) {
+        //@ts-ignore
+        if (window?.ReactNativeWebView) {
+          //@ts-ignore
+          window?.ReactNativeWebView.postMessage(
+            `Message from React Web to React Native ${event.data}`
+          );
+        }
+        console.log("DD", event.data);
+      }
+    });
+    document.addEventListener("message", (event: any) => {
       console.log(event.data);
       let parsedData: any = {};
       if (typeof event.data === "string") {
@@ -40,28 +71,14 @@ const Home: NextPage = () => {
       }
 
       if (parsedData?.didimessage) {
-        const { SCREEN_HEIGHT, SCREEN_WIDTH } = parsedData?.didimessage;
-        setMobileScreen({
-          screehWidth: SCREEN_WIDTH,
-          screenHeight: SCREEN_HEIGHT,
-        });
+        console.log("DD2", event.data);
+        if (parsedData?.didimessage === "play") {
+          setPlaying(true);
+        } else if (parsedData?.didimessage === "pause") {
+          setPlaying(false);
+        }
       }
     });
-    // document.addEventListener("message", (event) => {
-    //   console.log(event.data);
-    //   let parsedData: any = {};
-    //   if (typeof event.data === "string") {
-    //     parsedData = JSON.parse(event.data);
-    //   }
-
-    //   if (parsedData?.didimessage) {
-    //     const { SCREEN_HEIGHT, SCREEN_WIDTH } = parsedData?.didimessage;
-    //     setMobileScreen({
-    //       screehWidth: SCREEN_WIDTH,
-    //       screenHeight: SCREEN_HEIGHT,
-    //     });
-    //   }
-    // });
     return () => {
       window.removeEventListener("message", (event) => {});
     };
@@ -81,31 +98,22 @@ const Home: NextPage = () => {
   return (
     <>
       <Head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0"
-        ></meta>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
       </Head>
       <div style={{}}>
         {client && (
           <>
             <div>
               <div
-                className={`${styles.video_wrapper} ${
-                  isFullscreen ? `${styles.fullscreen}` : ""
-                }`}
-                style={{
-                  width: isFullscreen
-                    ? mobileScreen.screenHeight
-                    : mobileScreen.screehWidth,
-                  height: isFullscreen
-                    ? mobileScreen.screehWidth
-                    : mobileScreen.screenHeight,
-                  backgroundColor: "yellow",
-                }}
+                className={`${styles.video_wrapper} ${isFullscreen ? `${styles.fullscreen}` : ""}`}
+                // style={{
+                //   width: isFullscreen ? mobileScreen.screenHeight : mobileScreen.screehWidth,
+                //   height: isFullscreen ? mobileScreen.screehWidth : mobileScreen.screenHeight,
+                //   backgroundColor: "yellow",
+                // }}
                 // style={{ width: "100%", height: "100%" }}
               >
-                <ReactPlayer
+                {/* <ReactPlayer
                   url="https://www.youtube.com/watch?v=hPCgXeAi55s"
                   playsinline
                   playing={playing}
@@ -113,8 +121,8 @@ const Home: NextPage = () => {
 
                   width={"100%"}
                   height={"100%"}
-                />
-                <button
+                /> */}
+                {/* <button
                   style={{
                     width: 80,
                     position: "absolute",
@@ -156,11 +164,12 @@ const Home: NextPage = () => {
                   }}
                 >
                   <p>back</p>
-                </button>
+                </button> */}
               </div>
-              {/* <ReactPlayer
+              <ReactPlayer
                 ref={playerRef}
                 url="https://player.vimeo.com/video/76979871"
+                playing={playing}
                 // url="https://www.youtube.com/watch?v=hPCgXeAi55s"
                 width="100%"
                 height="100%"
@@ -190,7 +199,7 @@ const Home: NextPage = () => {
                   },
                 }}
               />
-              <CustomFullscreenButton onClick={toggleFullscreen} /> */}
+              {/* <CustomFullscreenButton onClick={toggleFullscreen} /> */}
             </div>
           </>
         )}
