@@ -19,11 +19,14 @@ const Home: NextPage = () => {
   }, []);
 
   const playerRef = useRef<ReactPlayer>(null);
+  const [videoUrl, setVideoUrl] = useState("");
   const [playing, setPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isSeekDragging, setIsSeekDragging] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
 
   // const toggleFullscreen = () => {
   //   if (playerRef.current) {
@@ -48,6 +51,9 @@ const Home: NextPage = () => {
 
       if (parsedData?.didimessage) {
         const message = parsedData?.didimessage;
+        if (message?.videoUrl !== undefined) {
+          setVideoUrl(message.videoUrl);
+        }
         if (message?.playing !== undefined) {
           setPlaying(message.playing);
         }
@@ -58,7 +64,16 @@ const Home: NextPage = () => {
           setPlaybackRate(message.playbackRate);
         }
         if (message?.currentTime !== undefined) {
-          playerRef.current?.seekTo(Math.floor(message.currentTime), "seconds");
+          if (message.currentTime > 1 && !duration) {
+            playerRef.current?.seekTo(message.currentTime - 1);
+          } else {
+            playerRef.current?.seekTo(message.currentTime);
+          }
+
+          // if (Number(message.currentTime) > duration || message.currentTime < 0) {
+          //   playerRef.current?.seekTo(duration - 15);
+          // } else {
+          // }
         }
       }
 
@@ -100,151 +115,96 @@ const Home: NextPage = () => {
       //@ts-ignore
       window.ReactNativeWebView.postMessage(JSON.stringify({ didimessage }));
     } else {
-      alert({ message: "not mobile" });
+      // alert({ message: "not mobile" });
     }
   };
 
   useEffect(() => {
-    messageToRN("hihi");
-  }, [playing]);
-  // if (mobileScreen.screehWidth === 0) return <div>loading</div>;
+    if (isVideoLoading === false) {
+      messageToRN({ isVideoLoading: false });
+    }
+  }, [isVideoLoading]);
+
+  useEffect(() => {
+    messageToRN({ isWebViewLoading: false });
+  }, []);
 
   useEffect(() => {
     if (currentTime > -1) {
-      console.log("currentTime", currentTime);
       messageToRN({ currentTime });
     }
   }, [currentTime]);
 
   useEffect(() => {
     if (duration > -1) {
-      console.log("duration", duration);
       messageToRN({ duration });
     }
   }, [duration]);
+
+  // if (!videoUrl || isVideoLoading)
+  //   return (
+  //     <div
+  //       style={{ width: "100vw", height: "100vh", justifyContent: "center", alignItems: "center" }}
+  //     >
+  //       loading...
+  //     </div>
+  //   );
 
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
       </Head>
-      <div style={{}}>
+      <div style={{ width: "100%", height: "100%" }}>
         {client && (
           <>
-            <div>
-              <div
-                className={`${styles.video_wrapper}`}
-                // style={{
-                //   width: isFullscreen ? mobileScreen.screenHeight : mobileScreen.screehWidth,
-                //   height: isFullscreen ? mobileScreen.screehWidth : mobileScreen.screenHeight,
-                //   backgroundColor: "yellow",
-                // }}
-                // style={{ width: "100%", height: "100%" }}
-              >
-                {/* <ReactPlayer
-                  url="https://www.youtube.com/watch?v=hPCgXeAi55s"
-                  playsinline
-                  playing={playing}
-                  // controls
+            <ReactPlayer
+              ref={playerRef}
+              url={videoUrl}
+              playing={playing}
+              src={{}}
+              // url=""
+              width="100vw"
+              height="100vh"
+              playsinline
+              controls={false}
+              muted={isMuted}
+              playbackRate={playbackRate}
+              onDuration={(duration) => {
+                setDuration(duration);
+                console.log("duration", duration);
+              }}
+              onProgress={({ playedSeconds }) => setCurrentTime(playedSeconds)}
+              onReady={() => setIsVideoLoading(false)}
+              // options={{
+              //   fullscreen: {
+              //     iosNative: true,
+              //   },
+              // }}
 
-                  width={"100%"}
-                  height={"100%"}
-                /> */}
-                {/* <button
-                  style={{
-                    width: 80,
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    zIndex: 3,
-                  }}
-                  onClick={() => {
-                    setPlaying((p) => !p);
-                  }}
-                >
-                  <p>{playing ? "Pause" : "Play"}</p>
-                </button>
-                <button
-                  style={{
-                    width: 80,
-                    position: "absolute",
-                    top: 0,
-                    left: 100,
-                    zIndex: 99999,
-                  }}
-                  onClick={() => {
-                    setIsFullscreen((p) => !p);
-                    messageToRN(isFullscreen ? "exitFullscreen" : "fullscreen");
-                  }}
-                >
-                  <p>fullscreen</p>
-                </button>
-                <button
-                  style={{
-                    width: 80,
-                    position: "absolute",
-                    top: 0,
-                    left: 200,
-                    zIndex: 99999,
-                  }}
-                  onClick={() => {
-                    messageToRN("back");
-                  }}
-                >
-                  <p>back</p>
-                </button> */}
-              </div>
-              <ReactPlayer
-                ref={playerRef}
-                url="https://player.vimeo.com/video/76979871"
-                playing={playing}
-                // url="https://www.youtube.com/watch?v=hPCgXeAi55s"
-                width="100%"
-                height="100%"
-                playsinline
-                controls={false}
-                muted={isMuted}
-                playbackRate={playbackRate}
-                onDuration={(duration) => setDuration(duration)}
-                onProgress={({ playedSeconds }) => setCurrentTime(playedSeconds)}
-                // options={{
-                //   fullscreen: {
-                //     iosNative: true,
-                //   },
-                // }}
-                config={{
-                  vimeo: {
-                    playerOptions: {
-                      controls: false,
-                      responsive: true,
-                      muted: false,
-                      autopause: false,
-                      playsinline: true,
-                      loop: true,
-                    },
+              config={{
+                vimeo: {
+                  playerOptions: {
+                    controls: false,
+                    responsive: true,
+                    muted: false,
+                    autopause: false,
+                    playsinline: true,
                   },
-                  youtube: {
-                    playerVars: {
-                      controls: 0,
-                    },
+                },
+                youtube: {
+                  playerVars: {
+                    controls: 0,
+                    modestbranding: 1,
                   },
-                }}
-              />
-              {/* <CustomFullscreenButton onClick={toggleFullscreen} /> */}
-            </div>
+                },
+              }}
+            />
           </>
         )}
       </div>
     </>
   );
 };
-
-function CustomFullscreenButton({ onClick }: any) {
-  return (
-    <button onClick={onClick} style={{ right: "10px", bottom: "-50px" }}>
-      Fullscreen
-    </button>
-  );
-}
 
 export default Home;
