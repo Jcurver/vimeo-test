@@ -6,17 +6,6 @@ import styles from "../styles/video.module.css";
 
 const Home: NextPage = () => {
   const [client, setClient] = useState(false);
-  // const [mobileScreen, setMobileScreen] = useState<{
-  //   screehWidth: number;
-  //   screenHeight: number;
-  // }>({
-  //   screehWidth: 0,
-  //   screenHeight: 0,
-  // });
-
-  useEffect(() => {
-    setClient(true);
-  }, []);
 
   const playerRef = useRef<ReactPlayer>(null);
   const [videoUrl, setVideoUrl] = useState("");
@@ -25,18 +14,11 @@ const Home: NextPage = () => {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isSeekDragging, setIsSeekDragging] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
 
-  // const toggleFullscreen = () => {
-  //   if (playerRef.current) {
-  //     const internalPlayer = playerRef.current.getInternalPlayer();
-  //     if (internalPlayer && internalPlayer.requestFullscreen) {
-  //       internalPlayer.requestFullscreen();
-  //     }
-  //     setIsFullscreen(!isFullscreen);
-  //   }
-  // };
+  useEffect(() => {
+    setClient(true);
+  }, []);
 
   useEffect(() => {
     window.addEventListener("message", (event) => {
@@ -69,44 +51,9 @@ const Home: NextPage = () => {
           } else {
             playerRef.current?.seekTo(message.currentTime);
           }
-
-          // if (Number(message.currentTime) > duration || message.currentTime < 0) {
-          //   playerRef.current?.seekTo(duration - 15);
-          // } else {
-          // }
         }
-      }
-
-      if (parsedData?.didimessage) {
-        //@ts-ignore
-        if (window?.ReactNativeWebView) {
-          //@ts-ignore
-          window?.ReactNativeWebView.postMessage(
-            `Message from React Web to React Native ${parsedData?.didimessage?.isMuted}`
-          );
-        }
-        console.log("DD", event.data);
       }
     });
-    // document.addEventListener("message", (event: any) => {
-    //   console.log(event.data);
-    //   let parsedData: any = {};
-    //   if (typeof event.data === "string") {
-    //     parsedData = JSON.parse(event.data);
-    //   }
-
-    //   if (parsedData?.didimessage) {
-    //     console.log("DD2", event.data);
-    //     if (parsedData?.didimessage === "play") {
-    //       setPlaying(true);
-    //     } else if (parsedData?.didimessage === "pause") {
-    //       setPlaying(false);
-    //     }
-    //   }
-    // });
-    // return () => {
-    //   window.removeEventListener("message", (event) => {});
-    // };
   }, []);
 
   const messageToRN = (didimessage: string | object) => {
@@ -140,15 +87,6 @@ const Home: NextPage = () => {
       messageToRN({ duration });
     }
   }, [duration]);
-
-  // if (!videoUrl || isVideoLoading)
-  //   return (
-  //     <div
-  //       style={{ width: "100vw", height: "100vh", justifyContent: "center", alignItems: "center" }}
-  //     >
-  //       loading...
-  //     </div>
-  //   );
 
   return (
     <>
